@@ -1,9 +1,10 @@
+
+
 import {
   BrowserRouter as Router,
   Routes,
   Route,
   Navigate,
-  useNavigate,
 } from "react-router-dom";
 import "./App.css";
 import Login from "./pages/auth/Login";
@@ -15,32 +16,30 @@ import { getUser } from "./redux/slices/authSlice";
 import { jobSeekerRoutes, employerRoutes } from "./routes/routes";
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
-  const navigate = useNavigate();
   const token = localStorage.getItem("token");
   const { userData } = useSelector((state) => state.auth);
 
-  useEffect(() => {
-    if (!token || (allowedRoles && !allowedRoles.includes(userData?.role))) {
-      navigate("/login");
-    }
-  }, [token, userData, navigate, allowedRoles]);
+  if (!token) {
+    return <Navigate to="/login" replace />;
+  }
 
-  if (!token || (allowedRoles && !allowedRoles.includes(userData?.role))) {
-    return null;
+  if (allowedRoles && !allowedRoles.includes(userData?.role)) {
+    return <Navigate to="/login" replace />;
   }
 
   return children;
 };
 
 function App() {
-  const { userData } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
+  const { userData } = useSelector((state) => state.auth);
+  const token = localStorage.getItem("token");
 
   useEffect(() => {
-    if (localStorage.getItem("token")) {
+    if (token && !userData?.role) {
       dispatch(getUser());
     }
-  }, [dispatch]);
+  }, [dispatch, token, userData?.role]);
 
   const getRoutesByRole = () => {
     switch (userData?.role) {
@@ -54,38 +53,44 @@ function App() {
   };
 
   const roleRoutes = getRoutesByRole();
+
   return (
     <Router>
-      {/* Auth Routes */}
       <Routes>
+        {/* Auth Routes */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-      </Routes>
 
-      {/* Protected Role-Based Routes */}
-      {Object.keys(userData)?.length > 0 && userData?.role ? (
-        <Layout>
-          <Routes>
-            {roleRoutes.map(({ path, element, protected: isProtected }) => (
-              <Route
-                key={path}
-                path={path}
-                element={
-                  isProtected ? (
-                    <ProtectedRoute allowedRoles={[userData.role]}>
-                      {element}
-                    </ProtectedRoute>
-                  ) : (
-                    element
-                  )
-                }
-              />
-            ))}
-          </Routes>
-        </Layout>
-      ) : (
-        ""
-      )}
+        {/* Protected Routes for Logged In Users */}
+        <Route
+          path="/*"
+          element={
+            token && userData?.role ? (
+              <Layout>
+                <Routes>
+                  {roleRoutes.map(({ path, element, protected: isProtected }) => (
+                    <Route
+                      key={path}
+                      path={path}
+                      element={
+                        isProtected ? (
+                          <ProtectedRoute allowedRoles={[userData.role]}>
+                            {element}
+                          </ProtectedRoute>
+                        ) : (
+                          element
+                        )
+                      }
+                    />
+                  ))}
+                </Routes>
+              </Layout>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+      </Routes>
     </Router>
   );
 }
