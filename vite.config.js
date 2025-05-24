@@ -1,10 +1,22 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react-swc'
+// import { defineConfig } from 'vite'
+// import react from '@vitejs/plugin-react-swc'
 
-// https://vite.dev/config/
+// // https://vite.dev/config/
+// export default defineConfig({
+//   plugins: [react()],
+//    build: {
+//     outDir: 'dist',
+//   }
+// })
+
+
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+
 export default defineConfig({
+  base: '/', // Important for Render
   plugins: [react()],
    build: {
     outDir: 'dist',
   }
-})
+});
